@@ -1,0 +1,21 @@
+library(shiny)
+
+#selectInput("race", label=h3("Choose a variable to display"),
+#           c("Percent White", "Percent Black", "Percent Hispanic", "Percent Asian")),
+#sliderInput("years", label="Select year range", min=0, max=100, value = c(0, 100))),
+shinyUI(fluidPage(
+
+  titlePanel("Visual Analysis of Movies"),
+
+  sidebarLayout(
+    sidebarPanel(
+      p("Display visuals about movie data from IMDB"),
+
+      uiOutput("yControl")),
+    mainPanel(
+
+      htmlOutput("value"),
+      plotOutput("moviesByYear")
+    )
+  )
+))
