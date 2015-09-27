@@ -5,60 +5,73 @@ library(reshape2)
 
 source("helpers.R")
 movies <- readRDS("data/movies.rds")
+moviesWithRatings <- getMoviesByRatings(movies)
+avgRatings <- moviesWithRatings %>% group_by(mpaa) %>% summarize(mean(rating))
+minYear = min(movies$year)
+maxYear = max(movies$year)
 
 shinyServer(function(input, output) {
 
-  output$selection2 <-  renderText({
-    paste("you have selected", input$tab)
-  })
+
+  ## List Item 1 - "Movies By Year"
+  #Use a reactive conductor to get a subset of movies dataframe for the years
+  #selected. This reactive function is used by two outputs, hence it is efficient to
+  #use such a reactive conductor instead of doing the subsetting twice for each user
+  m <- reactive({ getMoviesByYear(movies, input$years[1], input$years[2]) })
 
   output$yearSelection <- renderUI({
 
-    h2(paste("Number of Movies released from ", input$years[1], " to ", input$years[2]))
+    h4(paste("Number of Movies released from ", input$years[1], " to ", input$years[2]))
   })
 
   output$yearControl <- renderUI({
-    minYear = min(movies$year)
-    maxYear = max(movies$year)
 
-    sliderInput("years", label="Select year range", min=minYear, max=maxYear, value = c(minYear,maxYear))
-    #selectInput("input1", label=h3("Choose a year"), c("2001", "2002", "2003"))
-    #checkboxGroupInput("genres", "Choose Genre", genres[,1])
+    sliderInput("years", label="Select year range", min=minYear, max=maxYear, value = c(minYear,maxYear), sep="")
   })
 
-  output$moviesByYear <- renderPlot({
-    m <- getMoviesByYear(movies, input$years[1], input$years[2])
-    plotMoviesByYear(m)
+  output$moviesByYearPlot <- renderPlot({
+    plotMoviesByYear(m())
   })
-# output$map <- renderPlot({
 
-    ## A more elegant version than the one commented below
-#    args <- switch(input$race,
-#              "Percent White" = list(counties$white, "darkgreen", "% White"),
-#              "Percent Black" = list(counties$black, "black", "% Black"),
-#              "Percent Hispanic" = list(counties$hispanic, "darkorange", "% Hispanic"),
-#              "Percent Asian" = list(counties$asian, "darkviolet", "% Asian"))
-#    args$min <- input$slider1[1]
-#    args$max <- input$slider1[2]
+  output$yearlyAverage <- renderUI({
+    h4(paste("The average number of movies made between ", input$years[1], " and ", input$years[2], " is "), strong(round(mean(m()$count), digits=2)))
+  })
+  ##############################
 
-#    do.call(percent_map, args)
-#    data <- switch(input$race,
-#        "Percent White" = counties$white,
-#        "Percent Black" = counties$black,
-#        "Percent Hispanic" = counties$hispanic,
-#        "Percent Asian" = counties$asian)
-#    color <- switch(input$race,
-#                    "Percent White" = "darkgreen",
-#                    "Percent Black" = "black",
-#                    "Percent Hispanic" = "blue",
-#                    "Percent Asian" = "yellow")
-#    title <- switch(input$race,
-#                    "Percent White" = "% White",
-#                    "Percent Black" = "% Black",
-#                    "Percent Hispanic" = "% Hispanic",
-#                    "Percent Asian" = "% Asian")
+  ## List Item 2 - "Density Plot of Ratings"
 
-#    percent_map(var = data, color = color, legend.title = title, max = input$slider1[2], min = input$slider1[1])
-#  })
+  output$ratingSelection <- renderUI({
+    h4("Kernel Density curve of MPAA ratings for movies")
+  })
+  output$ratingPlot <- renderPlot({
+    plotMoviesByRatings(moviesWithRatings)
+
+  })
+  output$averageRating <- renderTable({
+
+       print.data.frame(avgRatings)
+
+  })
+  ##############################
+
+  ## List Item 3 - "Histogram of lengths by Genre"
+
+  output$genreSelection <- renderUI({
+    #Display message about the selection
+    h4(paste("The frequency distribution of movie length for your selected genre of: ",input$genre))
+  })
+
+  output$genreControl <- renderUI({
+    #Show a selectInput
+    selectInput("genre", label="Select a genre of movies", choices=genreChoices)
+  })
+
+  output$genrePlot <- renderPlot({
+    #Render a histogram of lengths for the selected genre
+    gVar <- eval(input$genre)
+    m <- getMoviesByGenre(movies, gVar)
+    #m <- subset(movies, gVar == 1)
+    plotGenreHistogram(m)
+  })
 
 })

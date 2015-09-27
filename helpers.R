@@ -6,7 +6,6 @@ getMoviesByYear <- function(x, from, to) {
   by_year <- x %>% group_by(year) %>% summarize(n_distinct(year))
   by_year <- by_year %>% filter(year >= from & year <= to)
   by_year <- as.POSIXct(x = apply(by_year[,1], 1, paste, "01", "01", sep="-"), origin="1960-01-01", tz="")
-  #by_year <- as.POSIXct(x = paste(by_year, "01", "01", sep="-"), origin="1960-01-01", tz="PST")
   by_title <- x %>% group_by(year) %>% summarize(n_distinct(title))
   by_title <- by_title %>% filter(year >= from & year <= to)
   names(by_title) <- c("year", "count")
@@ -16,20 +15,48 @@ getMoviesByYear <- function(x, from, to) {
   return(count_df)
 }
 
-# Function to get the count of movies by genre. This returns a dataframe with variables Genre and count of movies.
-getMoviesByGenre <- function(x) {
-  m <- melt(x, id.vars=c("title", "year"), measure.vars = c("Action", "Animation","Comedy","Drama","Documentary","Romance","Short"), variable.name="Genre", value.name="count")
+# This returns a subset of the passed dataframe x with the condition of the variable y equal to 1
+getMoviesByGenre <- function(x, y) {
 
-  by_genre <- m %>% group_by(Genre) %>% summarize(sum(count))
+  var <- eval((substitute(x[a], list(a = y))))
 
-  return(by_genre)
+  m <- subset(x, var[1] == 1)
+  #Clean up some data where the movie length is presumably recorded incorrectly
+  return(subset(m, length > 5 & length < 1000))
 }
+
+
+#Return a dataframe with null ratings removed
+getMoviesByRatings <- function(x) {
+  m <- droplevels(subset(x, mpaa != ""))
+  return(m)
+}
+
 
 # Plotting functions start here
 plotMoviesByYear <- function(df) {
-  g1 <- ggplot(data=df, aes(x=year, y=count)) + geom_bar(stat="identity", colour="black") +
-        scale_fill_brewer(palette="Pastel1") +
+  g1 <- ggplot(data=df, aes(x=year, y=count)) + geom_bar(stat="identity", colour="black", fill="skyblue") +
         xlab("Years") +
         ylab("No. of Movies Released")
   return(g1)
+}
+#scale_colour_brewer(palette="Pastel1") +
+
+# Plot a density plot of ratings
+plotMoviesByRatings <- function(df) {
+  g2 <- ggplot(data=df, aes(x=rating)) + geom_density(aes(fill=factor(mpaa)), alpha=.5) +
+        labs(fill="MPAA Rating") +
+        scale_x_discrete(limits = levels(df$rating)) +
+        xlab("Viewer Ratings") +
+        ylab("Density")
+  return(g2)
+}
+
+#Plot a histogram of movie lengths
+plotGenreHistogram <- function(df) {
+  g3 <- ggplot(data=df, aes(x=length)) + geom_histogram(fill="skyblue", colour="black") +
+        xlab("Movie length in minutes") +
+        ggtitle("Histogram of movie lengths by genre")
+
+  return(g3)
 }
