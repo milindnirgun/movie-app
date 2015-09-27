@@ -17,7 +17,13 @@ shinyServer(function(input, output) {
   #Use a reactive conductor to get a subset of movies dataframe for the years
   #selected. This reactive function is used by two outputs, hence it is efficient to
   #use such a reactive conductor instead of doing the subsetting twice for each user
-  m <- reactive({ getMoviesByYear(movies, input$years[1], input$years[2]) })
+  m <- reactive({
+    from <- input$years[1]
+    to <- input$years[2]
+    if (is.null(from)) from = minYear
+    if (is.null(to)) to = maxYear
+
+    getMoviesByYear(movies, from, to) })
 
   output$yearSelection <- renderUI({
 
