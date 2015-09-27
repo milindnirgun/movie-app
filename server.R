@@ -41,7 +41,7 @@ shinyServer(function(input, output) {
   ## List Item 2 - "Density Plot of Ratings"
 
   output$ratingSelection <- renderUI({
-    h4("Kernel Density curve of MPAA ratings for movies")
+    h4("Kernel Density curve of viewer ratings for movies categorized by their MPAA rating")
   })
   output$ratingPlot <- renderPlot({
     plotMoviesByRatings(moviesWithRatings)
